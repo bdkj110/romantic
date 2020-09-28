@@ -1,44 +1,89 @@
 <head>
     <meta charset="UTF-8">
-    <title>romantic</title>
+    <title>romanticPoster</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.2/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/addons/p5.sound.js"></script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
         * {
             width: 350;
             height: 700;
-            margin: auto;
+            margin:0%;
+
         }
+
+        .romance {
+            height: 20;
+            position: fixed;
+            user-select:none;
+            color: #e56b6f;
+
+            left: 5;
+            text-align: left;
+            font-size: 40px;
+        }
+
+        .lxu {
+            height: 20;
+
+            position: fixed;
+            user-select:none;
+            color: #e56b6f;
+
+            left: -5;
+            text-align: right;
+            font-size: 40px;
+        }
+
     </style>
 </head>
 
 
 <body>
+    <div class="romance">ROMANCE</div>
+    <div class="lxu">LxU</div>
     <script>
-        let vehicles = []
-        let loveValue = 1
-        let textTransparent = 0
-        let myFont
-        let points
+        let vehicles = [];
+        let points;
 
+        let song;
+        let loveValue = 1;
+        let myFont;
+
+        let img;
+        let iconX;
+
+        let incX = 0.05;//横轴复杂度
+        let incY = 0.001;//摆动速度
+        let distance = 10;
+        let wavesHeight = 100;
+        let yOff = 0;
         //////////////////////////////////预加载
         function preload() {
-            myFont = loadFont('romance-Regular.otf')
+            myFont = loadFont('romance-Regular.otf');
+            img = loadImage('./1.jpg');
+            iconX = loadImage('./x.svg');
+            soundFormats('wav');
+            song = loadSound('1.wav');
         }
 
         //////////////////////////////////
         function setup() {
-            createCanvas(350, 700)
+            noCursor()
+            //createCanvas(350, 700)
+            imageMode(CENTER)
+            img.loadPixels();
+            noiseDetail(1);
+
             textFont(myFont)
             textSize(280)
 
-            for (let i = 0; i < 100; i++) {
-                
-                textTransparent++
-               
-                console.log(textTransparent)
-                
-            }
+            let cnv = createCanvas(350, 700);
+            cnv.mousePressed(function () {
+                song.loop();
+                console.log('开始播放')
+            })
 
             points = myFont.textToPoints('浪', 30, 300, 280)
             //console.log(points)
@@ -52,12 +97,19 @@
         //////////////////////////////////
         function draw() {
             smooth()
-            background(220,90)
-            strokeWeight(1)
-            
-            fill(255, 123, 123,50);
-            text("漫", 30, 580)
+            background(74, 38, 255)
+            song.rate(loveValue)
 
+            //鼠标
+            if (mouseIsPressed) {
+                image(iconX, mouseX, mouseY, 25, 25)
+                loveValue += 0.0005;
+            }
+
+
+            //浪
+            strokeWeight(1)
+            fill(255, 85, 75)
             for (let i = 0; i < vehicles.length; i++) {
                 let v = vehicles[i];
                 v.behaviors();
@@ -65,18 +117,35 @@
                 v.show();
             }
 
+            //漫
+            stroke("#e56b6f")
+            for (let y = 800; y > 350 + wavesHeight; y -= distance) {
+                let xOff = 0;
+                for (let x = -wavesHeight; x < 350; x += distance / 2) {
+                    strokeWeight(1);
+                    let n = noise(xOff, yOff);
+                    let value = map(n, 0, 1, -wavesHeight, wavesHeight);
+                    let pix = img.get(x, y + value);
+                    let minWeight = 7
+                    let maxWeight = 4
+                    strokeWeight(map(brightness(pix), 255, 0, minWeight, maxWeight));
+
+                    point(x, y + value,);
+                    xOff += incX+loveValue-1;
+                }
+                yOff += incY;
+            }
         }
 
-
-
-        function mouseClicked() {
-            loveValue += 1;
-            console.log(loveValue);
+        function mouseReleased() {//停止播放
+            song.pause();
+            loveValue = 1
         }
+
 
         function love(x, y) {
             fill("#e56b6f");
-            // noStroke();
+             noStroke();
             push();
             translate(x, y);
             beginShape();
@@ -171,7 +240,7 @@
             this.flee = function (target) {//扩散
                 let desired = p5.Vector.sub(target, this.pos);
                 let d = desired.mag();
-                if (d < 50) {
+                if (d < 50 & mouseIsPressed) {
                     desired.setMag(this.maxspeed);
                     desired.mult(-1);
                     let steer = p5.Vector.sub(desired, this.vel);
